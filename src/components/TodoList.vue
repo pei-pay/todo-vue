@@ -5,17 +5,11 @@
       enter-active-class="animate__animated animate__fadeInLeft"
       leave-active-class="animate__animated animate__fadeOutRight"
   >
-    <div v-for="todo in todosFiltered" :key="todo.id" class="todo__item">
-      <div class="todo__item__left">
-        <input type="checkbox" v-model="todo.completed">
-        <div v-if="!todo.editing" @dblclick="editTodo(todo)" class="todo__item__label" :class="{ completed : todo.completed }">{{ todo.title }}</div>
-        <input v-else type="text" v-model="todo.title" class="todo__item__edit"
-          @blur="doneEdit(todo)" @keyup.enter="doneEdit(todo)" @keyup.esc="cancelEdit(todo)" v-focus>
-      </div>
-      <div class="todo__item__remove" @click="removeTodo(todo)">
-        &times;
-      </div>
-    </div>
+    <todo-item v-for="todo in todosFiltered" :key="todo.id" 
+        :title="todo.title" :completed="todo.completed"
+        @on-delete="removeTodo(todo)" @on-edit="editTodo(todo, $event)"
+        @on-toggle="toggleTodo(todo)"
+    />
   </transition-group>
 
   <div class="extra-container">
@@ -42,8 +36,13 @@
 </template>
 
 <script>
+import TodoItem from './TodoItem.vue'
+
 export default {
   name: 'TodoList',
+  components: { 
+    TodoItem, 
+  },
   data() {
     return {
       newTodo: '',
@@ -55,19 +54,16 @@ export default {
           'id': 1,
           'title': 'Finish Vue Project',
           'completed': false,
-          'editing': false
         },
         {
           'id': 2,
           'title': 'Learn Nuxt.js',
           'completed': false,
-          'editing': false
         },
         {
           'id': 3,
           'title': 'Use GitHub',
           'completed': false,
-          'editing': false
         },
       ]
     }
@@ -92,13 +88,6 @@ export default {
       return this.todos.filter(todo => todo.completed).length  > 0
     },
   },
-  directives: {
-    focus: {
-      inserted(el) {
-        el.focus()
-      }
-    }
-  },
   methods: {
     addTodo() {
       if(this.newTodo.trim().length == 0) {
@@ -109,29 +98,20 @@ export default {
         id: this.idForTodo,
         title: this.newTodo,
         completed: false,
-        editing: false,
       })
 
       this.newTodo = ''
       this.idForTodo++
     },
-    editTodo(todo) {
-      this.beforeEditCache = todo.title
-      todo.editing = true
-    },
-    doneEdit(todo) {
-      if(todo.title.trim() == '') {
-        todo.title = this.beforeEditCache
-      }
-      todo.editing = false
-    },
-    cancelEdit(todo) {
-      todo.title = this.beforeEditCache
-      todo.editing = false
+    editTodo(todo, editedTitle) {
+      todo.title = editedTitle
     },
     removeTodo(todo) {
       let index = this.todos.indexOf(todo);
 			this.todos.splice(index, 1);
+    },
+    toggleTodo(todo) {
+      todo.completed = !todo.completed
     },
     checkAllTodos(event) {
       this.todos.forEach(todo => todo.completed = event.target.checked)
@@ -212,6 +192,10 @@ export default {
     border-top: 1px solid lightgrey;
     padding-top: 14px;
     margin-bottom: 14px;
+
+    button:not(:first-child) {
+      margin-left: 10px;
+    }
   }
 
   button {
